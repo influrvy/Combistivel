@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Controle de Combustível — Sucuba</title>
+<style>
+  :root{
+    --bg: #0F1417;
+    --panel: #171F26;
+    --panel2: #1D2731;
+    --border: #2A343E;
+    --text: #E8ECEF;
+    --muted: #8A96A3;
+    --amber: #E3963E;
+    --teal: #4FB8A6;
+    --red: #E5484D;
+    --green: #4CAF7D;
+    --mono: ui-monospace, "Cascadia Code", "SF Mono", Consolas, monospace;
+    --sans: -apple-system, "Segoe UI", Roboto, system-ui, sans-serif;
+  }
+  *{ box-sizing:border-box; }
+  body{
+    margin:0; background:var(--bg); color:var(--text);
+    font-family:var(--sans); padding:24px 16px 60px;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{ max-width:760px; margin:0 auto; }
+  header{ margin-bottom:28px; }
+  header .eyebrow{
+    font-family:var(--mono); font-size:12px; letter-spacing:.12em; text-transform:uppercase;
+    color:var(--amber); margin-bottom:6px;
+  }
+  header h1{ margin:0 0 4px; font-size:26px; font-weight:700; letter-spacing:-.01em;}
+  header p{ margin:0; color:var(--muted); font-size:14px; line-height:1.5;}
+  .flow{
+    display:flex; align-items:center; gap:6px; margin-top:14px; font-family:var(--mono);
+    font-size:12px; color:var(--muted); flex-wrap:wrap;
+  }
+  .flow b{ color:var(--text); background:var(--panel2); border:1px solid var(--border); border-radius:5px; padding:3px 8px; }
+  .flow span.arrow{ color:var(--amber); }
+
+  .card{
+    background:var(--panel); border:1px solid var(--border); border-radius:12px;
+    padding:20px; margin-bottom:16px;
+  }
+  .card h2{
+    font-size:13px; text-transform:uppercase; letter-spacing:.08em; color:var(--amber);
+    margin:0 0 4px; font-family:var(--mono); display:flex; align-items:center; gap:8px;
+  }
+  .card h2 .num{
+    display:inline-flex; align-items:center; justify-content:center;
+    width:20px;height:20px;border-radius:50%; background:var(--amber); color:#1a1206;
+    font-size:11px; font-weight:700;
+  }
+  .card .sub{ color:var(--muted); font-size:13px; margin:0 0 16px; line-height:1.5;}
+
+  .toggle-row{ display:flex; gap:8px; flex-wrap:wrap; margin-bottom:4px;}
+  .toggle{
+    flex:1; min-width:140px; text-align:center; padding:10px 12px; border-radius:8px;
+    border:1px solid var(--border); background:var(--panel2); color:var(--muted);
+    cursor:pointer; font-size:13px; font-weight:600; transition:.15s;
+    user-select:none;
+  }
+  .toggle:hover{ border-color:var(--amber); }
+  .toggle.active{ background:rgba(227,150,62,.12); border-color:var(--amber); color:var(--amber);}
+
+  .field-grid{ display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:14px;}
+  .field-group{
+    border:1px solid var(--border); border-radius:8px; padding:12px; background:var(--panel2);
+  }
+  .field-group .label{ font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); margin-bottom:8px;}
+  .cm-mm{ display:flex; gap:8px; align-items:center; }
+  .cm-mm input{ width:100%; }
+  .cm-mm .unit{ font-family:var(--mono); font-size:11px; color:var(--muted); white-space:nowrap;}
+  input[type=number]{
+    background:#0F1417; border:1px solid var(--border); border-radius:6px; color:var(--text);
+    padding:9px 8px; font-family:var(--mono); font-size:14px; width:100%;
+  }
+  input[type=number]:focus{ outline:none; border-color:var(--amber); }
+  input[type=number]::-webkit-inner-spin-button{ opacity:.4;}
+
+  .rate-row{
+    display:flex; gap:10px; align-items:center; margin-top:14px; padding-top:14px;
+    border-top:1px dashed var(--border); flex-wrap:wrap;
+  }
+  .rate-row label{ font-size:12px; color:var(--muted); flex:1; min-width:220px; line-height:1.4;}
+  .rate-row input{ width:130px;}
+  .warn-note{
+    display:flex; gap:8px; font-size:12px; color:var(--amber); background:rgba(227,150,62,.08);
+    border:1px solid rgba(227,150,62,.35); border-radius:8px; padding:10px 12px; margin-top:12px; line-height:1.5;
+  }
+
+  .single-row{ display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:14px;}
+
+  .results h2{ color:var(--teal); }
+  .result-grid{ display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:14px;}
+  .result-box{
+    background:var(--panel2); border:1px solid var(--border); border-radius:10px; padding:14px;
+  }
+  .result-box .lbl{ font-size:11px; text-transform:uppercase; color:var(--muted); letter-spacing:.05em; margin-bottom:6px;}
+  .result-box .val{ font-family:var(--mono); font-size:22px; font-weight:700; color:var(--text);}
+  .result-box .val small{ font-size:12px; color:var(--muted); font-weight:400; margin-left:4px;}
+  .result-box.hero{ grid-column:1 / -1; background:rgba(79,184,166,.1); border-color:var(--teal);}
+  .result-box.hero .val{ color:var(--teal); font-size:28px;}
+
+  .balance{
+    margin-top:16px; border-radius:10px; padding:14px; border:1px solid var(--border);
+    background:var(--panel2); font-size:13px; line-height:1.6;
+  }
+  .balance.ok{ border-color:var(--green); background:rgba(76,175,125,.08); }
+  .balance.bad{ border-color:var(--red); background:rgba(229,72,77,.08); }
+  .balance .title{ font-family:var(--mono); font-size:11px; text-transform:uppercase; letter-spacing:.06em; margin-bottom:6px; color:var(--muted);}
+  .balance.ok .title{ color:var(--green);}
+  .balance.bad .title{ color:var(--red);}
+  .balance .diff{ font-family:var(--mono); font-weight:700; }
+
+  footer{ text-align:center; color:var(--muted); font-size:11px; margin-top:30px; font-family:var(--mono);}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="eyebrow">Sucuba · Sistema de geração</div>
+    <h1>Controle de Combustível</h1>
+    <p>Registro de filtragem e apuração de diesel movimentado entre tanques.</p>
+    <div class="flow">
+      <b>TQR</b><span class="arrow">→</span><b>TQP</b><span class="arrow">→</span><b>Fluxômetro</b><span class="arrow">→</span><b>Geração</b>
+    </div>
+  </header>
+
+  <!-- STEP 1: TIPO DE OPERAÇÃO -->
+  <div class="card">
+    <h2><span class="num">1</span>Tipo de operação desta leitura</h2>
+    <p class="sub">A filtragem em curso envolve só a saída do TQP para geração, ou o TQR também está sendo transferido para o TQP ao mesmo tempo?</p>
+    <div class="toggle-row" id="opToggle">
+      <div class="toggle active" data-op="single">Somente TQP → Geração</div>
+      <div class="toggle" data-op="dual">Dupla filtragem (TQR → TQP + TQP → Geração)</div>
+    </div>
+  </div>
+
+  <!-- STEP 2: TQR -->
+  <div class="card" id="tqrCard">
+    <h2><span class="num">2</span>Tanque TQR</h2>
+    <p class="sub">Selecione o tanque e informe a altura inicial e final da régua (centímetros + milímetros).</p>
+    <div class="toggle-row" id="tankToggle">
+      <div class="toggle active" data-tank="5">Tanque 05</div>
+      <div class="toggle" data-tank="6">Tanque 06</div>
+    </div>
+
+    <div class="field-grid">
+      <div class="field-group">
+        <div class="label">Altura inicial</div>
+        <div class="cm-mm">
+          <input type="number" id="tqrIniCm" min="0" max="907" value="0" placeholder="cm">
+          <span class="unit">cm</span>
+          <input type="number" id="tqrIniMm" min="0" max="9" value="0" placeholder="mm">
+          <span class="unit">mm</span>
+        </div>
+      </div>
+      <div class="field-group">
+        <div class="label">Altura final</div>
+        <div class="cm-mm">
+          <input type="number" id="tqrFimCm" min="0" max="907" value="0" placeholder="cm">
+          <span class="unit">cm</span>
+          <input type="number" id="tqrFimMm" min="0" max="9" value="0" placeholder="mm">
+          <span class="unit">mm</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 3: TQP -->
+  <div class="card">
+    <h2><span class="num">3</span>Tanque TQP</h2>
+    <p class="sub">Informe a altura inicial e final (centímetros + milímetros).</p>
+    <div class="field-grid">
+      <div class="field-group">
+        <div class="label">Altura inicial</div>
+        <div class="cm-mm">
+          <input type="number" id="tqpIniCm" min="0" max="362" value="0" placeholder="cm">
+          <span class="unit">cm</span>
+          <input type="number" id="tqpIniMm" min="0" max="9" value="0" placeholder="mm">
+          <span class="unit">mm</span>
+        </div>
+      </div>
+      <div class="field-group">
+        <div class="label">Altura final</div>
+        <div class="cm-mm">
+          <input type="number" id="tqpFimCm" min="0" max="362" value="0" placeholder="cm">
+          <span class="unit">cm</span>
+          <input type="number" id="tqpFimMm" min="0" max="9" value="0" placeholder="mm">
+          <span class="unit">mm</span>
+        </div>
+      </div>
+    </div>
+    <div class="rate-row">
+      <label>Taxa L/cm do TQP (aproximação linear a partir de 362 cm = 50.000 L — troque se houver tabela certificada)</label>
+      <input type="number" id="tqpRate" step="0.0001" value="138.1216">
+    </div>
+    <div class="warn-note">
+      ⚠️ Sem tabela volumétrica certificada do TQP, este cálculo assume relação linear entre altura e volume. Tanques reais nem sempre são lineares (o próprio TQR não é, por causa do fundo irregular). Trate o resultado do TQP como aproximado, não como valor de certificação.
+    </div>
+  </div>
+
+  <!-- STEP 4: FLUXOMETRO -->
+  <div class="card">
+    <h2><span class="num">4</span>Fluxômetro</h2>
+    <p class="sub">Leitura inicial e final do totalizador (litros).</p>
+    <div class="single-row">
+      <div class="field-group">
+        <div class="label">Leitura inicial</div>
+        <input type="number" id="fluxIni" step="0.1" value="0">
+      </div>
+      <div class="field-group">
+        <div class="label">Leitura final</div>
+        <input type="number" id="fluxFim" step="0.1" value="0">
+      </div>
+    </div>
+  </div>
+
+  <!-- RESULTS -->
+  <div class="card results">
+    <h2><span class="num" style="background:var(--teal)">5</span>Resultado da apuração</h2>
+
+    <div class="result-grid" id="tqrResults">
+      <div class="result-box">
+        <div class="lbl">Queda de altura no TQR</div>
+        <div class="val" id="rTqrAltura">0 <small>cm</small></div>
+      </div>
+      <div class="result-box">
+        <div class="lbl">Volume que saiu do TQR</div>
+        <div class="val" id="rTqrVol">0 <small>L</small></div>
+      </div>
+    </div>
+
+    <div class="result-grid">
+      <div class="result-box">
+        <div class="lbl">Variação de altura no TQP</div>
+        <div class="val" id="rTqpAltura">0 <small>cm</small></div>
+      </div>
+      <div class="result-box">
+        <div class="lbl">Variação líquida no TQP</div>
+        <div class="val" id="rTqpVol">0 <small>L</small></div>
+      </div>
+    </div>
+
+    <div class="result-grid">
+      <div class="result-box hero">
+        <div class="lbl">Total enviado ao sistema de geração (fluxômetro)</div>
+        <div class="val" id="rFlux">0 <small>L</small></div>
+      </div>
+    </div>
+
+    <div class="balance ok" id="balanceBox">
+      <div class="title">Conferência de balanço</div>
+      <div id="balanceText">Preencha os dados para conferir a consistência entre TQR, TQP e fluxômetro.</div>
+    </div>
+
+    <div class="rate-row" style="margin-top:16px;">
+      <label>Tolerância aceitável para a conferência (diferença entre o esperado e o medido)</label>
+      <input type="number" id="tolerancia" step="1" value="300"> <span class="unit" style="margin-left:6px;">L</span>
+    </div>
+  </div>
+
+  <footer>ISO 7507-1 · trenas rastreadas INMETRO · tabelas Amazon Aço Industriais</footer>
+</div>
+
+<script>
+// ---------- TABELA VOLUMÉTRICA TANQUE 05 (litros, index = altura em cm, 0 a 907) ----------
+const TANK5 = [0,1030,1029,1028,2057,3087,3086,4116,4115,4114,5144,5143,6172,7202,8231,9261,10290,10299,10452,11481,12511,13541,14570,15600,16629,17659,18689,19718,20748,21777,22807,23837,24866,25896,26925,27955,28985,30014,31044,32073,33103,34133,35162,36192,37221,38251,39281,40311,41342,42372,43403,44433,45464,46495,47525,48556,49586,50617,51647,52678,53709,54739,55770,56800,57831,58861,59892,60923,61953,62984,64014,65045,66075,67106,68137,69167,70198,71228,72259,73289,74320,75351,76381,77412,78442,79473,80503,81534,82565,83595,84626,85656,86687,87717,88748,89779,90809,91840,92870,93901,
+94931,95962,96993,98023,99054,100084,101114,102143,103173,104203,105232,106262,107291,108321,109351,110380,111410,112439,113469,114499,115528,116558,117587,118617,119647,120676,121706,122735,123765,124795,125824,126854,127883,128913,129943,130972,132002,133031,134061,135091,136120,137150,138179,139209,140239,141268,142298,143327,144357,145387,146416,147446,148475,149505,150535,151565,152594,153624,154654,155683,156713,157743,158772,159802,160832,161862,162891,163921,164951,165980,167010,168040,169069,170099,171129,172159,173188,174218,175248,176277,177307,178337,179366,180396,181426,182456,183485,184515,185545,186574,187604,188634,189663,190693,191723,192753,193782,194812,195842,196871,197901,198931,199960,200990,202020,203050,204079,205109,206139,207168,208198,209228,210257,211287,212317,213347,214376,215406,216436,217465,218495,219525,220554,221584,222614,223644,224673,225703,226733,227762,228792,229822,230851,231881,232911,233941,234970,236000,237030,238059,239089,240119,241148,242178,243208,244238,245267,246297,247327,248356,249386,250416,251445,252475,253505,254535,255564,256594,257624,258653,259683,260713,261742,262772,263802,264832,265861,266891,267921,268950,269980,271010,272039,273069,274099,275129,276158,277188,278218,279247,280277,281307,282336,283366,284396,285426,286455,287485,288515,289544,290574,291604,292633,293663,294693,295723,296752,297782,298812,299841,
+300871,301901,302930,303960,304990,306020,307050,308079,309109,310139,311169,312199,313228,314258,315288,316318,317348,318378,319407,320437,321467,322497,323527,324557,325586,326616,327646,328676,329706,330736,331765,332795,333825,334855,335885,336915,337944,338974,340004,341034,342064,343094,344123,345153,346183,347213,348243,349273,350302,351332,352362,353392,354422,355452,356481,357511,358541,359571,360601,361631,362660,363690,364720,365750,366780,367809,368839,369869,370899,371929,372959,373988,375018,376048,377078,378108,379138,380167,381197,382227,383257,384287,385317,386346,387376,388406,389436,390466,391496,392525,393555,394585,395615,396645,397675,398704,399734,400764,401794,402824,403854,404883,405913,406943,407973,409003,410033,411062,412092,413122,414152,415182,416211,417241,418271,419301,420331,421361,422390,423420,424450,425480,426510,427540,428569,429599,430629,431659,432689,433719,434748,435778,436808,437838,438868,439898,440927,441957,442987,444017,445047,446077,447106,448136,449166,450196,451226,452256,453285,454315,
+455345,456375,457405,458435,459464,460494,461524,462554,463584,464614,465644,466674,467704,468734,469764,470793,471823,472853,473883,474913,475943,476973,478003,479033,480063,481093,482123,483153,484183,485213,486243,487273,488302,489332,490362,491392,492422,493452,494482,495512,496542,497572,498602,499632,500662,501692,502722,503752,504781,505811,506841,507871,508901,509931,510961,511991,513021,514051,515081,516111,517141,518171,519201,520231,521261,522290,523320,524350,525380,526410,527440,528470,529500,530530,531560,532590,533620,534650,535680,536710,537740,538770,539799,540829,541859,542889,543919,544949,545979,547009,548039,549069,550099,551129,552159,553189,554219,555249,556278,557308,558338,559368,560398,561428,562458,563488,564518,565548,566578,567608,568638,569668,570698,571728,572758,573787,574817,575847,576877,577907,578937,579967,580997,582027,583057,584087,585117,586147,587177,588207,589237,590267,591296,592326,593356,594386,595416,596446,597476,598506,599536,
+600566,601596,602626,603656,604686,605716,606746,607775,608805,609835,610865,611895,612925,613955,614985,616015,617045,618075,619105,620135,621165,622195,623225,624255,625285,626315,627345,628375,629405,630435,631466,632496,633526,634556,635586,636616,637646,638676,639706,640736,641766,642796,643826,644856,645886,646916,647946,648976,650006,651036,652067,653097,654127,655157,656187,657217,658247,659277,660307,661337,662367,663397,664427,665457,666487,667517,668547,669577,670607,671637,672668,673698,674728,675758,676788,677818,678848,679878,680908,681938,682968,683998,685028,686058,687088,688118,689148,690178,691208,692238,693269,694299,695329,696359,697389,698419,699449,700479,701509,702539,703569,704599,705629,706659,707689,708719,709749,710779,711809,712839,713870,714900,715930,716960,717990,719020,720050,721080,722110,723140,724170,725200,726230,727260,728290,729320,730350,731380,732410,733440,734471,735501,736531,737561,738591,739621,740651,741681,742711,743741,744771,745801,746831,747861,748891,749921,
+750951,751981,753011,754041,755072,756102,757132,758162,759192,760222,761252,762282,763312,764342,765372,766402,767432,768462,769492,770522,771552,772582,773612,774642,775673,776703,777733,778763,779793,780823,781854,782884,783914,784944,785974,787004,788035,789065,790095,791125,792155,793185,794216,795246,796276,797306,798336,799366,800396,801427,802457,803487,804517,805547,806577,807608,808638,809668,810698,811728,812758,813789,814819,815849,816879,817909,818939,819970,821000,822030,823060,824090,825120,826150,827181,828211,829241,830271,831301,832331,833362,834392,835422,836452,837482,838512,839543,840573,841603,842633,843663,844693,845724,846754,847784,848814,849844,850874,851904,852935,853965,854995,856025,857055,858085,859116,860146,861176,862206,863236,864266,865297,866327,867357,868387,869417,870447,871478,872508,873538,874568,875598,876628,877658,878689,879719,880749,881779,882809,883839,884870,885900,886930,887960,888990,890020,891051,892081,893111,894141,895171,896201,897232,898262,899292,900322,
+901352,902382,903412,904443,905473,906503,907533,908563,909593,910624,911654,912684,913714,914744,915774,916805,917835,918865,919895,920925,921955,922986,924016,925046,926076];
+
+// ---------- TABELA VOLUMÉTRICA TANQUE 06 (litros, index = altura em cm, 0 a 907) ----------
+const TANK6 = [0,1030,1029,1028,2057,3087,3086,4116,4115,4114,5144,5143,6172,7202,8231,9261,9340,9676,10380,11315,12345,13374,14404,15434,16463,17493,18522,19552,20582,21611,22641,23670,24700,25730,26759,27789,28818,29848,30878,31907,32937,33966,34996,36026,37055,38085,39114,40145,41176,42206,43237,44267,45298,46328,47359,48390,49420,50451,51481,52512,53542,54573,55604,56634,57665,58695,59726,60756,61787,62818,63848,64879,65909,66940,67970,69001,70032,71062,72093,73123,74154,75184,76215,77246,78276,79307,80337,81368,82398,83429,84460,85490,86521,87551,88582,89612,90643,91673,92704,93735,
+94765,95796,96826,97857,98887,99918,100948,101977,103007,104036,105066,106096,107125,108155,109184,110214,111244,112273,113303,114332,115362,116392,117421,118451,119480,120510,121540,122569,123599,124628,125658,126688,127717,128747,129776,130806,131836,132865,133895,134924,135954,136984,138013,139043,140072,141102,142132,143161,144191,145220,146250,147280,148309,149339,150369,151398,152428,153458,154487,155517,156547,157577,158606,159636,160666,161695,162725,163755,164784,165814,166844,167874,168903,169933,170963,171992,173022,174052,175081,176111,177141,178171,179200,180230,181260,182289,183319,184349,185378,186408,187438,188468,189497,190527,191557,192586,193616,194646,195675,196705,197735,198765,199794,200824,201854,202883,203913,204943,205972,207002,208032,209062,210091,211121,212151,213180,214210,215240,216269,217299,218329,219359,220388,221418,222448,223477,224507,225537,226566,227596,228626,229656,230685,231715,232745,233774,234804,235834,236863,237893,238923,239953,240982,242012,243042,244071,245101,246131,247160,248190,
+249220,250250,251279,252309,253339,254368,255398,256428,257457,258487,259517,260547,261576,262606,263636,264665,265695,266725,267754,268784,269814,270844,271873,272903,273933,274962,275992,277022,278051,279081,280111,281141,282170,283200,284230,285259,286289,287319,288348,289378,290408,291438,292467,293497,294527,295556,296586,297616,298645,299675,300705,301735,302764,303794,304824,305853,306883,307913,308943,309973,311003,312032,313062,314092,315122,316152,317182,318211,319241,320271,321301,322331,323361,324390,325420,326450,327480,328510,329540,330569,331599,332629,333659,334689,335719,336748,337778,338808,339838,340868,341898,342927,343957,344987,346017,347047,348077,349106,350136,351166,352196,353226,354255,355285,356315,357345,358375,359405,360434,361464,362494,363524,364554,365584,366613,367643,368673,369703,370733,371763,372792,373822,374852,375882,376912,377942,378971,380001,381031,382061,383091,384121,385150,386180,387210,388240,389270,390300,391329,392359,393389,394419,395449,396479,397508,398538,399568,400598,401628,402658,
+403687,404717,405747,406777,407807,408836,409866,410896,411926,412956,413986,415015,416045,417075,418105,419135,420165,421194,422224,423254,424284,425314,426344,427373,428403,429433,430463,431493,432523,433552,434582,435612,436642,437672,438702,439731,440761,441791,442821,443851,444881,445910,446940,447970,449000,450030,451060,452089,453119,454149,455179,456209,457238,458268,459298,460328,461358,462388,463418,464448,465478,466508,467537,468567,469597,470627,471657,472687,473717,474747,475777,476807,477837,478867,479897,480927,481957,482987,484016,485046,486076,487106,488136,489166,490196,491226,492256,493286,494316,495346,496376,497406,498436,499466,500496,501525,502555,503585,504615,505645,506675,507705,508735,509765,510795,511825,512855,513885,514915,515945,516975,518005,519034,520064,521094,522124,523154,524184,525214,526244,527274,528304,529334,530364,531394,532424,533454,534484,535513,536543,537573,538603,539633,540663,541693,542723,543753,544783,545813,546843,547873,548903,549933,550963,551993,553022,554052,555082,556112,557142,
+558172,559202,560232,561262,562292,563322,564352,565382,566412,567442,568472,569502,570531,571561,572591,573621,574651,575681,576711,577741,578771,579801,580831,581861,582891,583921,584951,585981,587010,588040,589070,590100,591130,592160,593190,594220,595250,596280,597310,598340,599370,600400,601430,602460,603490,604519,605549,606579,607609,608639,609669,610699,611729,612759,613789,614819,615849,616879,617909,618939,619969,620999,622029,623059,624089,625119,626149,627179,628209,629239,630269,631299,632329,633359,634389,635420,636450,637480,638510,639540,640570,641600,642630,643660,644690,645720,646750,647780,648810,649840,650870,651900,652930,653960,654990,656021,657051,658081,659111,660141,661171,662201,663231,664261,665291,666321,667351,668381,669411,670441,671471,672501,673531,674561,675591,676622,677652,678682,679712,680742,681772,682802,683832,684862,685892,686922,687952,688982,690012,691042,692072,693102,694132,695162,696192,697223,698253,699283,700313,701343,702373,703403,704433,705463,706493,707523,708553,709583,710613,711643,
+712673,713703,714733,715763,716793,717824,718854,719884,720914,721944,722974,724004,725034,726064,727094,728124,729154,730184,731214,732244,733274,734304,735334,736364,737394,738425,739455,740485,741515,742545,743575,744605,745635,746665,747695,748725,749755,750785,751815,752845,753875,754905,755935,756965,757995,759026,760056,761086,762116,763146,764176,765206,766236,767266,768296,769326,770356,771386,772416,773446,774476,775506,776537,777567,778597,779627,780657,781687,782718,783748,784778,785808,786838,787868,788899,789929,790959,791989,793019,794049,795079,796110,797140,798170,799200,800230,801260,802291,803321,804351,805381,806411,807441,808472,809502,810532,811562,812592,813622,814653,815683,816713,817743,818773,819803,820833,821864,822894,823924,824954,825984,827014,828045,829075,830105,831135,832165,833195,834226,835256,836286,837316,838346,839376,840407,841437,842467,843497,844527,845557,846587,847618,848648,849678,850708,851738,852768,853799,854829,855859,856889,857919,858949,859980,861010,862040,863070,864100,865130,866161,
+867191,868221,869251,870281,871311,872341,873372,874402,875432,876462,877492,878522,879553,880583,881613,882643,883673,884703,885734,886764,887794,888824,889854,890884,891915,892945,893975,895005,896035,897065,898095,899126,900156,901186,902216,903246,904276,905307,906337,907367,908397,909427,910457,911488,912518,913548,914578,915608,916638,917669,918699,919729,920759,921789,922819,923849,924880,925910];
+
+// mm interpolation (constant 103 L per mm), valid 0-9
+const MM_STEP = 103;
+
+function fmt(n){
+  return Math.round(n).toLocaleString('pt-BR');
+}
+function fmt1(n){
+  return n.toLocaleString('pt-BR', {minimumFractionDigits:1, maximumFractionDigits:1});
+}
+
+function tqrVolume(tank, cm, mm){
+  const table = tank === 5 ? TANK5 : TANK6;
+  cm = Math.max(0, Math.min(907, Math.round(cm||0)));
+  mm = Math.max(0, Math.min(9, Math.round(mm||0)));
+  return table[cm] + (mm * MM_STEP);
+}
+
+function tqpVolume(cm, mm, rate){
+  cm = Math.max(0, cm||0);
+  mm = Math.max(0, Math.min(9, mm||0));
+  return (cm + mm/10) * rate;
+}
+
+// ---- UI state ----
+let operation = 'single';
+let tank = 5;
+
+document.getElementById('opToggle').addEventListener('click', (e)=>{
+  const t = e.target.closest('.toggle');
+  if(!t) return;
+  operation = t.dataset.op;
+  document.querySelectorAll('#opToggle .toggle').forEach(el=>el.classList.toggle('active', el===t));
+  document.getElementById('tqrCard').style.display = operation === 'dual' ? '' : 'none';
+  document.getElementById('tqrResults').style.display = operation === 'dual' ? '' : 'none';
+  calc();
+});
+
+document.getElementById('tankToggle').addEventListener('click', (e)=>{
+  const t = e.target.closest('.toggle');
+  if(!t) return;
+  tank = Number(t.dataset.tank);
+  document.querySelectorAll('#tankToggle .toggle').forEach(el=>el.classList.toggle('active', el===t));
+  calc();
+});
+
+['tqrIniCm','tqrIniMm','tqrFimCm','tqrFimMm','tqpIniCm','tqpIniMm','tqpFimCm','tqpFimMm','tqpRate','fluxIni','fluxFim','tolerancia']
+  .forEach(id=>document.getElementById(id).addEventListener('input', calc));
+
+function calc(){
+  const g = id => Number(document.getElementById(id).value) || 0;
+
+  // TQR
+  const tqrIniVol = tqrVolume(tank, g('tqrIniCm'), g('tqrIniMm'));
+  const tqrFimVol = tqrVolume(tank, g('tqrFimCm'), g('tqrFimMm'));
+  const tqrOut = tqrIniVol - tqrFimVol; // saiu = queda de volume
+  const tqrAlturaIni = g('tqrIniCm') + g('tqrIniMm')/10;
+  const tqrAlturaFim = g('tqrFimCm') + g('tqrFimMm')/10;
+  const tqrQueda = tqrAlturaIni - tqrAlturaFim;
+
+  document.getElementById('rTqrAltura').innerHTML = fmt1(tqrQueda) + ' <small>cm</small>';
+  document.getElementById('rTqrVol').innerHTML = fmt(tqrOut) + ' <small>L</small>';
+
+  // TQP
+  const rate = g('tqpRate');
+  const tqpIniVol = tqpVolume(g('tqpIniCm'), g('tqpIniMm'), rate);
+  const tqpFimVol = tqpVolume(g('tqpFimCm'), g('tqpFimMm'), rate);
+  const tqpDelta = tqpFimVol - tqpIniVol; // pode ser + ou -
+  const tqpAlturaIni = g('tqpIniCm') + g('tqpIniMm')/10;
+  const tqpAlturaFim = g('tqpFimCm') + g('tqpFimMm')/10;
+  const tqpAlturaDelta = tqpAlturaFim - tqpAlturaIni;
+
+  document.getElementById('rTqpAltura').innerHTML = (tqpAlturaDelta>=0?'+':'') + fmt1(tqpAlturaDelta) + ' <small>cm</small>';
+  document.getElementById('rTqpVol').innerHTML = (tqpDelta>=0?'+':'') + fmt(tqpDelta) + ' <small>L</small>';
+
+  // Fluxômetro
+  const fluxOut = g('fluxFim') - g('fluxIni');
+  document.getElementById('rFlux').innerHTML = fmt(fluxOut) + ' <small>L</small>';
+
+  // Balanço
+  const tol = g('tolerancia');
+  const box = document.getElementById('balanceBox');
+  const txt = document.getElementById('balanceText');
+
+  if(operation === 'single'){
+    const esperado = -fluxOut;
+    const diff = tqpDelta - esperado;
+    const okDiff = Math.abs(diff) <= tol;
+    box.className = 'balance ' + (okDiff ? 'ok' : 'bad');
+    txt.innerHTML = 'Esperado no TQP: <b>' + fmt(esperado) + ' L</b> (equivalente ao que saiu pelo fluxômetro). '
+      + 'Medido no TQP: <b>' + fmt(tqpDelta) + ' L</b>. '
+      + 'Diferença: <span class="diff">' + (diff>=0?'+':'') + fmt(diff) + ' L</span>'
+      + (okDiff ? ' — dentro da tolerância.' : ' — acima da tolerância, revisar leituras.');
+  } else {
+    const esperado = tqrOut - fluxOut;
+    const diff = tqpDelta - esperado;
+    const okDiff = Math.abs(diff) <= tol;
+    box.className = 'balance ' + (okDiff ? 'ok' : 'bad');
+    txt.innerHTML = 'Esperado no TQP: <b>' + fmt(esperado) + ' L</b> (entrada vinda do TQR menos saída pelo fluxômetro). '
+      + 'Medido no TQP: <b>' + fmt(tqpDelta) + ' L</b>. '
+      + 'Diferença: <span class="diff">' + (diff>=0?'+':'') + fmt(diff) + ' L</span>'
+      + (okDiff ? ' — dentro da tolerância.' : ' — acima da tolerância, revisar leituras.')
+      + ' <br><span style="color:var(--muted); font-size:12px;">Lembrete: como as duas filtragens correm ao mesmo tempo, esta conferência é uma estimativa — o valor confiável de entrega à geração continua sendo o fluxômetro.</span>';
+  }
+}
+
+// init
+document.getElementById('tqrCard').style.display = 'none';
+document.getElementById('tqrResults').style.display = 'none';
+calc();
+</script>
+</body>
+</html>
